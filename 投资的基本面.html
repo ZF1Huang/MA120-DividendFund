@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>投资的基本面</title>
+  <style>
+    :root {
+      --bg-0: #040816;
+      --bg-1: #0b1433;
+      --bg-2: #141d4c;
+      --text: #eaf1ff;
+      --muted: #9bb0d8;
+      --cyan: #69e3ff;
+      --blue: #4f7dff;
+      --purple: #a57aff;
+      --yellow: #ffd97a;
+      --green: #56f0b0;
+      --pink: #ff86ab;
+      --card: rgba(16, 29, 72, 0.62);
+      --card-border: rgba(126, 183, 255, 0.28);
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 30px rgba(84, 141, 255, 0.2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 85% -15%, rgba(79, 125, 255, 0.25), transparent 60%),
+        radial-gradient(900px 560px at 8% 110%, rgba(165, 122, 255, 0.22), transparent 60%),
+        linear-gradient(130deg, var(--bg-0), var(--bg-1) 45%, var(--bg-2));
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+      background-size: 38px 38px;
+      mask-image: radial-gradient(circle at center, black 38%, transparent 100%);
+    }
+
+    #deck {
+      position: relative;
+      z-index: 1;
+      width: 100vw;
+      height: 100vh;
+      overflow-y: auto;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+
+    .slide {
+      width: 100%;
+      height: 100vh;
+      min-height: 100vh;
+      scroll-snap-align: start;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4.5vh 4vw;
+      position: relative;
+    }
+
+    .stage {
+      width: min(1280px, 92vw);
+      max-height: 90vh;
+      min-height: 74vh;
+      aspect-ratio: 16 / 9;
+      border-radius: 24px;
+      border: 1px solid var(--card-border);
+      background: linear-gradient(165deg, rgba(18, 32, 80, 0.74), rgba(12, 22, 58, 0.7));
+      box-shadow: var(--shadow);
+      padding: clamp(22px, 3vw, 44px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
+      overflow: hidden;
+      position: relative;
+      backdrop-filter: blur(8px);
+    }
+
+    .stage::before,
+    .stage::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(8px);
+      z-index: 0;
+    }
+
+    .stage::before {
+      width: 320px;
+      height: 320px;
+      right: -90px;
+      top: -90px;
+      background: radial-gradient(circle, rgba(105, 227, 255, 0.28), transparent 70%);
+    }
+
+    .stage::after {
+      width: 270px;
+      height: 270px;
+      left: -80px;
+      bottom: -90px;
+      background: radial-gradient(circle, rgba(165, 122, 255, 0.26), transparent 70%);
+    }
+
+    .head, .body, .foot { position: relative; z-index: 2; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(105, 227, 255, 0.35);
+      color: var(--cyan);
+      background: rgba(19, 34, 80, 0.55);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 13px;
+      font-weight: 600;
+      width: fit-content;
+    }
+
+    h1, h2 {
+      line-height: 1.18;
+      letter-spacing: 0.01em;
+      text-wrap: balance;
+      margin-top: 10px;
+    }
+
+    h1 { font-size: clamp(34px, 4.4vw, 60px); }
+    h2 { font-size: clamp(28px, 3vw, 44px); }
+
+    .sub {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: clamp(18px, 1.65vw, 28px);
+      line-height: 1.56;
+      max-width: 96%;
+    }
+
+    .grid2 { display: grid; grid-template-columns: 1.25fr 1fr; gap: 14px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+    .card {
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: inset 0 0 18px rgba(105, 227, 255, 0.06);
+    }
+
+    .card h3 {
+      font-size: clamp(18px, 1.7vw, 26px);
+      margin-bottom: 8px;
+      color: #dce9ff;
+    }
+
+    .card p, .card li {
+      font-size: clamp(17px, 1.3vw, 24px);
+      line-height: 1.58;
+    }
+
+    .card ul { padding-left: 1.2em; display: grid; gap: 6px; }
+
+    .muted { color: var(--muted); }
+    .hl { color: var(--cyan); font-weight: 700; text-shadow: 0 0 14px rgba(105, 227, 255, 0.35); }
+    .hl2 { color: #c9afff; font-weight: 700; text-shadow: 0 0 14px rgba(165, 122, 255, 0.35); }
+    .warn { color: var(--yellow); font-weight: 700; }
+
+    .num {
+      font-size: clamp(30px, 4vw, 64px);
+      font-weight: 800;
+      line-height: 1;
+      margin: 6px 0 8px;
+    }
+
+    .n-cyan { color: var(--cyan); }
+    .n-green { color: var(--green); }
+    .n-pink { color: var(--pink); }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .timeline .item {
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(13, 25, 60, 0.72);
+      padding: 12px;
+    }
+
+    .year {
+      color: var(--cyan);
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .chartbox {
+      width: 100%;
+      height: 130px;
+      border-radius: 12px;
+      border: 1px solid rgba(105, 227, 255, 0.24);
+      background: linear-gradient(180deg, rgba(105, 227, 255, 0.08), rgba(105, 227, 255, 0.01));
+      overflow: hidden;
+    }
+
+    .chartbox svg { width: 100%; height: 100%; display: block; }
+
+    .keyword-wall {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .kw {
+      border: 1px solid rgba(105, 227, 255, 0.35);
+      background: rgba(17, 34, 84, 0.62);
+      color: #d8ecff;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: clamp(13px, 1vw, 17px);
+      letter-spacing: 0.03em;
+      box-shadow: inset 0 0 14px rgba(105, 227, 255, 0.08);
+    }
+
+    .quote {
+      border-left: 3px solid rgba(105, 227, 255, 0.62);
+      padding-left: 12px;
+      color: #d3e3ff;
+      line-height: 1.62;
+      font-size: clamp(16px, 1.25vw, 22px);
+    }
+
+    .foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #89a3cf;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+
+    #dots {
+      position: fixed;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 9;
+      display: grid;
+      gap: 9px;
+    }
+
+    #dots button {
+      width: 11px;
+      height: 11px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.22);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 0 0 0 rgba(105, 227, 255, 0.35);
+    }
+
+    #dots button.active {
+      background: var(--cyan);
+      transform: scale(1.2);
+      box-shadow: 0 0 0 6px rgba(105, 227, 255, 0.2);
+    }
+
+    .a {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+
+    .slide.active .a { opacity: 1; transform: translateY(0); }
+    .slide.active .a:nth-child(2) { transition-delay: 0.08s; }
+    .slide.active .a:nth-child(3) { transition-delay: 0.16s; }
+    .slide.active .a:nth-child(4) { transition-delay: 0.24s; }
+
+    @media (max-width: 980px) {
+      .stage {
+        aspect-ratio: auto;
+        min-height: 90vh;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      .grid2, .grid3, .timeline { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="deck">
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">开场</span>
+          <h1 class="a">投资的基本面</h1>
+          <p class="sub a">一边大盘走高，一边大量普通人亏钱。问题可能不是运气，而是 <span class="hl">方向</span>。这份演示将把“指数上涨却账户回撤”的原因拆清楚。</p>
+        </div>
+        <div class="body grid2">
+          <div class="card a">
+            <h3>今晚只讲一个核心问题</h3>
+            <p>指数在涨、行业在涨，为什么普通投资者却在亏钱？</p>
+          </div>
+          <div class="card a">
+            <h3>核心结论预告</h3>
+            <p>价值投资中，真正决定收益的，不是操作频率，而是有没有 <span class="hl2">站对方向</span>。看对产业周期、资金流向、政策主线，胜率会显著提高。</p>
+          </div>
+        </div>
+        <div class="foot"><span>Tech Presentation</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">市场反差</span>
+          <h2 class="a">行情热，账户冷</h2>
+        </div>
+        <div class="body grid3">
+          <div class="card a">
+            <p class="muted">2024-2025 上证</p>
+            <div class="num n-cyan">+900点</div>
+            <p>从2600点附近涨至3500点上方</p>
+          </div>
+          <div class="card a">
+            <p class="muted">沪深300</p>
+            <div class="num n-green">+30%+</div>
+            <p>阶段涨幅超过30%</p>
+          </div>
+          <div class="card a">
+            <p class="muted">散户账户</p>
+            <div class="num n-pink">60%+</div>
+            <p>近两年出现亏损</p>
+          </div>
+        </div>
+        <div class="card a">
+          <h3>关键词提取</h3>
+          <div class="keyword-wall">
+            <span class="kw">反差</span><span class="kw">指数上涨</span><span class="kw">散户亏损</span><span class="kw">越补越亏</span><span class="kw">Wind 数据</span><span class="kw">没站对方向</span>
+          </div>
+        </div>
+        <div class="foot"><span>数据来源：Wind / 券商统计口径</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">主线爆发</span>
+          <h2 class="a">黄金、资源、算力、商业航天全面走强</h2>
+        </div>
+        <div class="body grid2">
+          <div class="card a">
+            <ul>
+              <li><span class="hl">黄金</span>：历史新高</li>
+              <li><span class="hl">资源上游</span>：周期强势</li>
+              <li><span class="hl">AI/算力</span>：持续走强</li>
+              <li><span class="hl">商业航天</span>：频上涨幅榜</li>
+            </ul>
+          </div>
+          <div class="card a">
+            <h3>图示：趋势共振</h3>
+            <div class="chartbox">
+              <svg viewBox="0 0 800 300" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#69e3ff" />
+                    <stop offset="100%" stop-color="#4f7dff" />
+                  </linearGradient>
+                  <linearGradient id="lg2" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#a57aff" />
+                    <stop offset="100%" stop-color="#69e3ff" />
+                  </linearGradient>
+                </defs>
+                <polyline fill="none" stroke="url(#lg1)" stroke-width="6" points="20,250 110,232 200,210 300,188 390,170 490,140 590,120 690,95 780,76" />
+                <polyline fill="none" stroke="url(#lg2)" stroke-width="5" points="20,258 115,246 210,229 300,210 390,196 490,174 590,150 690,122 780,96" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="card a quote">
+          一边是全线飘红，一边是账户亏损。行情并不缺，缺的是与行情匹配的持仓结构。
+        </div>
+        <div class="foot"><span>问题不在“有没有机会”，而在“你是否拿对资产”</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">关键词地图</span>
+          <h2 class="a">核心词汇</h2>
+        </div>
+        <div class="body grid2">
+          <div class="card a">
+            <h3>市场与资产</h3>
+            <div class="keyword-wall">
+              <span class="kw">上证指数</span><span class="kw">沪深300</span><span class="kw">宽基指数</span><span class="kw">沪深300 ETF</span><span class="kw">中证A50 ETF</span><span class="kw">上证50 ETF</span><span class="kw">黄金ETF</span><span class="kw">有色金属ETF</span><span class="kw">算力ETF</span><span class="kw">航天航空ETF</span>
+            </div>
+          </div>
+          <div class="card a">
+            <h3>逻辑与行为</h3>
+            <div class="keyword-wall">
+              <span class="kw">国家战略</span><span class="kw">产业周期上行</span><span class="kw">资金持续流入</span><span class="kw">政策市</span><span class="kw">周期错位</span><span class="kw">沉没成本</span><span class="kw">前景理论</span><span class="kw">非理性</span><span class="kw">方向感</span><span class="kw">耐心</span>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>关键词出现有助于观众记忆锚定</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">原因一</span>
+          <h2 class="a">指数在涨，但很多人买的不是指数</h2>
+        </div>
+        <div class="body grid2">
+          <div class="card a">
+            <h3>宽基主线</h3>
+            <p>沪深300ETF、中证A50ETF、上证50ETF，过去两年整体约 <span class="hl">25%~40%</span>。</p>
+            <p style="margin-top:8px;">这类资产代表核心资产，波动相对可控，更适合多数普通投资者作为底仓。</p>
+          </div>
+          <div class="card a">
+            <h3>常见偏差</h3>
+            <ul>
+              <li>追主题混合基金</li>
+              <li>追热点行业基金</li>
+              <li>凭感觉追高个股</li>
+            </ul>
+            <p style="margin-top:8px;">结果：<span class="hl2">跑输了指数，赚了指数不赚钱</span>。</p>
+          </div>
+        </div>
+        <div class="foot"><span>先选“正确资产类别”</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">原因二</span>
+          <h2 class="a">行业在涨，但你买错了行业</h2>
+        </div>
+        <div class="body grid3">
+          <div class="card a">
+            <h3>强势方向</h3>
+            <ul>
+              <li>黄金ETF：约70%</li>
+              <li>有色ETF：最高近107%</li>
+              <li>算力指数：超80.74%</li>
+              <li>航天航空ETF：约56.84%</li>
+            </ul>
+          </div>
+          <div class="card a">
+            <h3>多数人持仓</h3>
+            <ul>
+              <li>新能源旧产能</li>
+              <li>高位消费白马</li>
+              <li>过剩制造业</li>
+              <li>过气传统赛道</li>
+            </ul>
+          </div>
+          <div class="card a">
+            <h3>结果</h3>
+            <p>行业在涨，但你的组合在跌。</p>
+            <p style="margin-top:8px;">选错行业，操作越多，误差越大。</p>
+          </div>
+        </div>
+        <div class="card a">
+          <h3>数字补充</h3>
+          <p>伦敦金现货：2025年初 <span class="hl">2625.92</span> 美元/盎司，年末 <span class="hl">4314.72</span>，全年约 <span class="hl">64.31%</span>；有色金属ETF最高近 <span class="hl">107%</span>。</p>
+        </div>
+        <div class="foot"><span>行业选择决定收益上限</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">原因三</span>
+          <h2 class="a">最残酷的真相：<span class="warn">周期错位</span></h2>
+        </div>
+        <div class="body grid2">
+          <div class="card a">
+            <h3>错误决策模型</h3>
+            <ul>
+              <li>看名字好不好听</li>
+              <li>看博主推不推荐</li>
+              <li>忽略周期和资金结构</li>
+            </ul>
+          </div>
+          <div class="card a">
+            <h3>正确决策问题</h3>
+            <ul>
+              <li>是否核心龙头？</li>
+              <li>是否处于上行周期？</li>
+              <li>资金是否持续流入？</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card a">
+          <p>资产“名声很大”不等于“时点正确”。买在高点，本质就是周期错位。</p>
+        </div>
+        <div class="card a">
+          <h3>关键词提取</h3>
+          <div class="keyword-wall">
+            <span class="kw">基金名字</span><span class="kw">博主推荐</span><span class="kw">核心龙头</span><span class="kw">上行阶段</span><span class="kw">资金流入</span><span class="kw">黄金周期</span><span class="kw">高点买入</span>
+          </div>
+        </div>
+        <div class="foot"><span>不是追热门，是做时点匹配</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">赚钱规律</span>
+          <h2 class="a">顺应趋势的人，在赚什么钱？</h2>
+        </div>
+        <div class="body grid3">
+          <div class="card a">
+            <h3>共同点 1</h3>
+            <p class="num n-cyan">国家战略</p>
+            <p>方向受政策支持。</p>
+          </div>
+          <div class="card a">
+            <h3>共同点 2</h3>
+            <p class="num n-green">周期上行</p>
+            <p>产业趋势处于扩张期。</p>
+          </div>
+          <div class="card a">
+            <h3>共同点 3</h3>
+            <p class="num" style="color:#beadff;">资金流入</p>
+            <p>有持续增量资金托举。</p>
+          </div>
+        </div>
+        <div class="card a">
+          <p>A股很多时候是政策市。顺势而为，才容易吃到整段趋势红利。</p>
+        </div>
+        <div class="foot"><span>方向 × 周期 × 资金</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">宏观观察</span>
+          <h2 class="a">国家在布局资源，聪明资金在布局资产</h2>
+        </div>
+        <div class="body grid2">
+          <div class="card a">
+            <h3>国家在做三件事</h3>
+            <ul>
+              <li>囤资源</li>
+              <li>囤能源</li>
+              <li>囤科技与制造能力</li>
+            </ul>
+            <p style="margin-top:8px;">石油储备增长、黄金储备增加、航天政策密集。</p>
+          </div>
+          <div class="card a">
+            <h3>市场聪明钱在做什么</h3>
+            <p>跟着国家方向配置资产，尽量避免站错大方向。</p>
+            <p style="margin-top:8px;">方向明确时，收益更多来自“配置正确”，而非“交易天赋”。</p>
+            <p style="margin-top:8px;">汇金、证金资管平台、梧桐树等“国家队”资金动向，往往是大方向的重要参考。</p>
+          </div>
+        </div>
+        <div class="foot"><span>先看大局，再做细节</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">长期视角</span>
+          <h2 class="a">每一轮财富机会，本质都在顺周期</h2>
+        </div>
+        <div class="body timeline">
+          <div class="item a">
+            <div class="year">2008 - 2015</div>
+            <p>顺应房地产周期的人，吃到时代红利。</p>
+          </div>
+          <div class="item a">
+            <div class="year">2019 - 2021</div>
+            <p>顺应新能源周期的人，获得显著增值。</p>
+          </div>
+          <div class="item a">
+            <div class="year">2023 - 2025</div>
+            <p>顺应黄金、资源、科技安全趋势的人，穿越波动。</p>
+          </div>
+        </div>
+        <div class="card a">
+          <p>投资看似复杂，底层逻辑很简单：站在上升的船上，耐心会被奖励。</p>
+        </div>
+        <div class="foot"><span>方向对了，很多事会变简单</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">行为金融</span>
+          <h2 class="a">“但是”：人往往是非理性的</h2>
+        </div>
+        <div class="body grid2">
+          <div class="card a">
+            <h3>前景理论</h3>
+            <p>Daniel Kahneman 提出：人更怕损失，不完全理性。</p>
+            <p style="margin-top:8px;">亏损时忍不住补仓死扛，本质是在证明“我没错”。</p>
+          </div>
+          <div class="card a">
+            <h3>生活中的映射</h3>
+            <p>关系投入越多，越不愿放手；和投资里的“沉没成本执念”高度相似。</p>
+            <p style="margin-top:8px;">这种“补仓式坚持”并不只发生在K线里，也发生在人生关系与职业选择中。</p>
+          </div>
+        </div>
+        <div class="card a">
+          <p>我们不是完美计算器，而是会情绪化、怕亏、在意相对得失的普通人。</p>
+        </div>
+        <div class="foot"><span>理解市场，更要理解自己</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">个人叙事</span>
+          <h2 class="a">理性之外，也有感性的坚持</h2>
+          <p class="sub a">人生里也会“死扛”，未必最理性，但可能是自己愿意承担的选择。</p>
+        </div>
+        <div class="body grid2">
+          <div class="card a">
+            <p>毕业时没有选高薪路径；后来面对芯片、互联网、储能机会，也曾反复挣扎。</p>
+            <p style="margin-top:8px;">理性上知道选择可能有偏差，但情感上仍希望在原有决策上继续前行。</p>
+          </div>
+          <div class="card a">
+            <p>最终仍选择沿着既有决定向前走。世界若只有收益最大化，也会少一些色彩。</p>
+            <p style="margin-top:8px;">这段叙事不是鼓励固执，而是提醒：投资与人生都需要在理性和感性之间找到平衡。</p>
+          </div>
+        </div>
+        <div class="foot"><span>投资与人生，都有理性和感性的张力</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="stage">
+        <div class="head">
+          <span class="chip a">收尾</span>
+          <h2 class="a">周末了也没讲什么指标技巧，只是谈谈方向</h2>
+        </div>
+        <div class="body grid2">
+          <div class="card a">
+            <h3>三句总结</h3>
+            <ul>
+              <li>投资不只看涨跌，更看方向</li>
+              <li>不只看故事，更看周期位置</li>
+              <li>不只看努力，更看是否顺势</li>
+            </ul>
+          </div>
+          <div class="card a">
+            <h3>结束语</h3>
+            <p>这期不提供复杂指标和具体操作建议，更多是一次“投资与人性”的聊天。</p>
+            <p style="margin-top:8px;" class="muted">投资有风险，回测与历史表现不代表未来收益。</p>
+          </div>
+        </div>
+        <div class="card a">
+          <h3>全片关键词回看</h3>
+          <div class="keyword-wall">
+            <span class="kw">反差</span><span class="kw">宽基指数</span><span class="kw">黄金/资源/算力/航天</span><span class="kw">周期错位</span><span class="kw">国家战略</span><span class="kw">资金流向</span><span class="kw">前景理论</span><span class="kw">沉没成本</span><span class="kw">方向 + 耐心</span>
+          </div>
+        </div>
+        <div class="foot"><span>好了，今天就先这样吧，拜拜～</span><span class="pi"></span></div>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="dots"></div>
+
+  <script>
+    // Single-file presentation controller.
+    (function () {
+      const deck = document.getElementById('deck');
+      const slides = Array.from(document.querySelectorAll('.slide'));
+      const dotsWrap = document.getElementById('dots');
+      const total = slides.length;
+      let current = 0;
+      let lock = false;
+      let wheelLock = false;
+
+      // Create right-side dot navigation.
+      slides.forEach((_, i) => {
+        const dot = document.createElement('button');
+        dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+        dot.addEventListener('click', () => go(i));
+        dotsWrap.appendChild(dot);
+      });
+      const dots = Array.from(dotsWrap.querySelectorAll('button'));
+
+      function setActive(idx) {
+        current = Math.max(0, Math.min(idx, total - 1));
+        slides.forEach((s, i) => s.classList.toggle('active', i === current));
+        dots.forEach((d, i) => d.classList.toggle('active', i === current));
+        document.querySelectorAll('.pi').forEach((el, i) => {
+          el.textContent = (i + 1) + ' / ' + total;
+        });
+      }
+
+      function go(idx) {
+        if (lock) return;
+        lock = true;
+        const target = Math.max(0, Math.min(idx, total - 1));
+        slides[target].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => {
+          setActive(target);
+          lock = false;
+        }, 560);
+      }
+
+      function next() { go(current + 1); }
+      function prev() { go(current - 1); }
+
+      // Wheel-based page flip with debounce lock.
+      deck.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (wheelLock || lock) return;
+        wheelLock = true;
+        if (Math.abs(e.deltaY) > 8) {
+          e.deltaY > 0 ? next() : prev();
+        }
+        setTimeout(() => { wheelLock = false; }, 680);
+      }, { passive: false });
+
+      // Keyboard support (optional for rehearsal).
+      window.addEventListener('keydown', (e) => {
+        if (['ArrowDown', 'PageDown', ' '].includes(e.key)) {
+          e.preventDefault();
+          next();
+        } else if (['ArrowUp', 'PageUp'].includes(e.key)) {
+          e.preventDefault();
+          prev();
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          go(0);
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          go(total - 1);
+        }
+      });
+
+      // Touch swipe support.
+      let startY = 0;
+      let deltaY = 0;
+      deck.addEventListener('touchstart', (e) => {
+        startY = e.changedTouches[0].clientY;
+        deltaY = 0;
+      }, { passive: true });
+      deck.addEventListener('touchmove', (e) => {
+        deltaY = e.changedTouches[0].clientY - startY;
+      }, { passive: true });
+      deck.addEventListener('touchend', () => {
+        if (Math.abs(deltaY) > 45) {
+          deltaY < 0 ? next() : prev();
+        }
+      }, { passive: true });
+
+      // Keep active state in sync with viewport.
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.64) {
+            const idx = slides.indexOf(entry.target);
+            if (idx >= 0) setActive(idx);
+          }
+        });
+      }, { threshold: [0.64] });
+
+      slides.forEach(s => observer.observe(s));
+      setActive(0);
+    })();
+  </script>
+</body>
+</html>
